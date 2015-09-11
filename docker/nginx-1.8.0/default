@@ -1,0 +1,67 @@
+upstream cgi_upstream {
+    server cgi:9000;
+}
+
+server {
+    listen 80;
+
+    server_name localhost;
+    root /var/www/app/public;
+
+    # strip index.php/ prefix if it is present
+    rewrite ^/index\.php/?(.*)$ /$1 permanent;
+
+    location / {
+        index index.php;
+        try_files $uri @rewriteapp;
+    }
+
+    location @rewriteapp {
+        rewrite ^(.*)$ /index.php/$1 last;
+    }
+
+    # pass the PHP scripts to FastCGI server from upstream phpfcgi
+    location ~ ^/index\.php(/|$) {
+        fastcgi_param BLUZ_ENV "dev";
+        fastcgi_param BLUZ_LOG "true";
+        fastcgi_pass cgi_upstream;
+        fastcgi_split_path_info ^(.+\.php)(/.*)$;
+        include fastcgi_params;
+        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param  HTTPS off;
+    }
+}
+
+server {
+    listen 443;
+
+    server_name localhost;
+    root /var/www/app/public;
+
+    ssl on;
+    ssl_certificate /etc/ssl/certs/default.crt;
+    ssl_certificate_key /etc/ssl/private/default.key;
+
+    # strip index.php/ prefix if it is present
+    rewrite ^/index\.php/?(.*)$ /$1 permanent;
+
+    location / {
+        index index.php;
+        try_files $uri @rewriteapp;
+    }
+
+    location @rewriteapp {
+        rewrite ^(.*)$ /index.php/$1 last;
+    }
+
+    # pass the PHP scripts to FastCGI server from upstream phpfcgi
+    location ~ ^/index\.php(/|$) {
+        fastcgi_param BLUZ_ENV "dev";
+        fastcgi_param BLUZ_LOG "true";
+        fastcgi_pass cgi_upstream;
+        fastcgi_split_path_info ^(.+\.php)(/.*)$;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTPS on;
+    }
+}

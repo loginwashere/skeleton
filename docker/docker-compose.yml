@@ -1,0 +1,33 @@
+nginx:
+  build: ./nginx-1.8.0
+  volumes:
+    - ./../:/var/www/app
+  links:
+    - php:cgi
+  ports:
+    - "80:80"
+    - "443:443"
+php:
+  build: ./../
+  volumes:
+    - ./../:/var/www/app
+  links:
+    - mysql:database
+mysql:
+  image: mysql:5.6.26
+  volumes:
+    - ./mysql/bin/:/docker-entrypoint-initdb.d/:rw
+    - ./../:/tmp/app
+  volumes_from:
+    - mysqldata
+  ports:
+    - "3306:3306"
+  environment:
+    - MYSQL_DATABASE=bluz
+    - MYSQL_USER=bluz
+    - MYSQL_PASSWORD=bluz
+    - MYSQL_ROOT_PASSWORD=root
+mysqldata:
+  image: phusion/baseimage:0.9.17
+  volumes:
+    - /var/lib/mysql
